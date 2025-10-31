@@ -3,6 +3,8 @@
 //
 #include <iostream>
 #include <array>
+
+#include "Sudoku_Generator.h"
 #include "Sudoku_Solver.h"
 using namespace std;
 
@@ -19,9 +21,14 @@ int main() {
         {{0,0,0,4,1,9,0,0,5}},
         {{0,0,0,0,8,0,0,7,9}}
     }};
-    Sudoku_Solver solver;
+    /*Sudoku_Solver solver;
     solver.solveSudoku(puzzle);
     solver.printSudoku(puzzle);
+    */
+
+
+    Sudoku_Generator sudoku_generator;
+    sudoku_generator.create_sudoku();
 }
 
 
