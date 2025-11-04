@@ -30,6 +30,7 @@ int main() {
     });
     //Endpoint Get /
     svr.Get("/", [](const httplib::Request&, httplib::Response& res) {
+        cout<<"GET request"<<endl;
         ifstream file("index.html");
         if (!file.is_open()) {
             res.status = 404;
@@ -46,6 +47,7 @@ int main() {
 
     // Endpoint POST /solve
     svr.Post("/solve", [](const httplib::Request& req, httplib::Response& res) {
+        cout<<"POST Request"<<endl;
         // Aggiungi header CORS alla risposta effettiva (singolo valore)
         res.set_header("Access-Control-Allow-Origin", "*");
 

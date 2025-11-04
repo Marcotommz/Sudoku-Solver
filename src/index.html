@@ -22,12 +22,14 @@
             justify-content: center;
             gap: 40px;
         }
+
         .navbar a {
             color: white;
             text-decoration: none;
             font-size: 18px;
             padding: 6px 12px;
         }
+
         .navbar a.active, .navbar a:hover {
             background: #444;
             border-radius: 5px;
@@ -45,6 +47,7 @@
             margin: 20px auto;
             border-collapse: collapse;
         }
+
         #grid input {
             width: 45px;
             height: 45px;
@@ -54,21 +57,15 @@
             outline: none;
         }
 
-        /* bordi spessi stile sudoku */
+        /* Bold lines 3x3 */
         #grid tr:nth-child(3n) input {
             border-bottom: 3px solid #000;
         }
-        #grid tr:nth-child(1) input {
-            border-top: none;
-        }
+
         #grid td:nth-child(3n) input {
             border-right: 3px solid #000;
         }
-        #grid td:nth-child(1) input {
-            border-left: none;
-        }
 
-        /* Bottoni */
         button {
             padding: 10px 20px;
             font-size: 16px;
@@ -79,6 +76,7 @@
             background: #0077ff;
             color: white;
         }
+
         button:hover {
             background: #005fcc;
         }
@@ -86,34 +84,29 @@
         .tab {
             display: none;
         }
-
-        .solution-box {
-            margin-top: 20px;
-        }
     </style>
 </head>
-<body>
 
+<body>
+<!-- NAVBAR -->
 <div class="navbar">
     <a href="#" id="solveTabBtn" class="active">Solve</a>
     <a href="#" id="createTabBtn">Create</a>
 </div>
 
+<!-- MAIN CONTENT -->
 <div class="container">
 
     <!-- TAB SOLVE -->
     <div id="solveTab" class="tab" style="display:block;">
         <h2>Sudoku Solver</h2>
-
         <table id="grid"></table>
-
         <button onclick="solve()">Solve</button>
         <button onclick="clearGrid()">Clear</button>
-
-        <div id="solution" class="solution-box"></div>
+        <div id="solution"></div>
     </div>
 
-    <!-- TAB CREATE (VUOTO PER ADESSO) -->
+    <!-- TAB CREATE -->
     <div id="createTab" class="tab">
         <h2>Sudoku Generator</h2>
         <p>Coming soon...</p>
@@ -122,7 +115,7 @@
 </div>
 
 <script>
-    // Build grid
+    // Build Sudoku grid
     const grid = document.getElementById("grid");
     for (let i = 0; i < 9; i++) {
         let row = grid.insertRow();
@@ -150,25 +143,28 @@
 
     async function solve() {
         let gridData = getGrid();
-        let res = await fetch("http://localhost:8080/solve", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ grid: gridData })
-        });
+        try {
+            let res = await fetch("http://localhost:8080/solve", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ grid: gridData })
+            });
 
-        let data = await res.json();
+            let data = await res.json();
 
-        if (data.status !== "ok") {
-            alert(data.message);
-            return;
-        }
-
-        // Fill solution
-        let sol = data.solution;
-        for (let i = 0; i < 9; i++) {
-            for (let j = 0; j < 9; j++) {
-                grid.rows[i].cells[j].children[0].value = sol[i][j];
+            if (data.status !== "ok") {
+                alert(data.message);
+                return;
             }
+
+            let sol = data.solution;
+            for (let i = 0; i < 9; i++)
+                for (let j = 0; j < 9; j++)
+                    grid.rows[i].cells[j].children[0].value = sol[i][j];
+
+        } catch (err) {
+            alert("Errore di connessione al server!");
+            console.error(err);
         }
     }
 
@@ -178,7 +174,7 @@
                 grid.rows[i].cells[j].children[0].value = "";
     }
 
-    // TAB Switch
+    // TAB SWITCH
     document.getElementById("solveTabBtn").onclick = () => switchTab("solve");
     document.getElementById("createTabBtn").onclick = () => switchTab("create");
 
