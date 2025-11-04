@@ -12,6 +12,8 @@
 #include "Sudoku_Solver.h"  // il tuo solver documentato
 #include <array>
 #include <iostream>
+#include <fstream>
+#include <iterator>
 
 using json = nlohmann::json;
 using namespace std;
@@ -25,6 +27,21 @@ int main() {
         res.set_header("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
         res.set_header("Access-Control-Allow-Headers", "Content-Type");
         res.status = 200;
+    });
+    //Endpoint Get /
+    svr.Get("/", [](const httplib::Request&, httplib::Response& res) {
+        ifstream file("index.html");
+        if (!file.is_open()) {
+            res.status = 404;
+            res.set_content("index.html non trovato", "text/plain");
+            return;
+        }
+
+        std::string html((istreambuf_iterator<char>(file)),
+                          istreambuf_iterator<char>());
+
+        res.set_header("Content-Type", "text/html; charset=UTF-8");
+        res.set_content(html, "text/html");
     });
 
     // Endpoint POST /solve

@@ -1,31 +1,194 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Sudoku Solver</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* NAVBAR */
+        .navbar {
+            width: 100%;
+            background: #222;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+        }
+        .navbar a {
+            color: white;
+            text-decoration: none;
+            font-size: 18px;
+            padding: 6px 12px;
+        }
+        .navbar a.active, .navbar a:hover {
+            background: #444;
+            border-radius: 5px;
+        }
+
+        .container {
+            width: 500px;
+            text-align: center;
+            margin-top: 40px;
+        }
+
+        /* GRIGLIA SUDOKU */
+        #grid {
+            border: 3px solid #000;
+            margin: 20px auto;
+            border-collapse: collapse;
+        }
+        #grid input {
+            width: 45px;
+            height: 45px;
+            text-align: center;
+            font-size: 22px;
+            border: 1px solid #999;
+            outline: none;
+        }
+
+        /* bordi spessi stile sudoku */
+        #grid tr:nth-child(3n) input {
+            border-bottom: 3px solid #000;
+        }
+        #grid tr:nth-child(1) input {
+            border-top: none;
+        }
+        #grid td:nth-child(3n) input {
+            border-right: 3px solid #000;
+        }
+        #grid td:nth-child(1) input {
+            border-left: none;
+        }
+
+        /* Bottoni */
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+            border-radius: 5px;
+            border: none;
+            background: #0077ff;
+            color: white;
+        }
+        button:hover {
+            background: #005fcc;
+        }
+
+        .tab {
+            display: none;
+        }
+
+        .solution-box {
+            margin-top: 20px;
+        }
+    </style>
+</head>
 <body>
+
+<div class="navbar">
+    <a href="#" id="solveTabBtn" class="active">Solve</a>
+    <a href="#" id="createTabBtn">Create</a>
+</div>
+
+<div class="container">
+
+    <!-- TAB SOLVE -->
+    <div id="solveTab" class="tab" style="display:block;">
+        <h2>Sudoku Solver</h2>
+
+        <table id="grid"></table>
+
+        <button onclick="solve()">Solve</button>
+        <button onclick="clearGrid()">Clear</button>
+
+        <div id="solution" class="solution-box"></div>
+    </div>
+
+    <!-- TAB CREATE (VUOTO PER ADESSO) -->
+    <div id="createTab" class="tab">
+        <h2>Sudoku Generator</h2>
+        <p>Coming soon...</p>
+    </div>
+
+</div>
+
 <script>
-    async function solve(grid) {
-        const res = await fetch('http://localhost:8080/solve', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({grid})
-        });
-        const j = await res.json();
-        console.log(j);
+    // Build grid
+    const grid = document.getElementById("grid");
+    for (let i = 0; i < 9; i++) {
+        let row = grid.insertRow();
+        for (let j = 0; j < 9; j++) {
+            let cell = row.insertCell();
+            let inp = document.createElement("input");
+            inp.type = "number";
+            inp.min = "0";
+            inp.max = "9";
+            cell.appendChild(inp);
+        }
     }
 
-    // esempio grid
-    const grid = [
-        [5,3,0,0,7,0,0,0,0],
-        [6,0,0,1,9,5,0,0,0],
-        [0,9,8,0,0,0,0,6,0],
-        [8,0,0,0,6,0,0,0,3],
-        [4,0,0,8,0,3,0,0,1],
-        [7,0,0,0,2,0,0,0,6],
-        [0,6,0,0,0,0,2,8,0],
-        [0,0,0,4,1,9,0,0,5],
-        [0,0,0,0,8,0,0,7,9]
-    ];
+    function getGrid() {
+        let arr = [];
+        for (let i = 0; i < 9; i++) {
+            arr[i] = [];
+            for (let j = 0; j < 9; j++) {
+                let v = grid.rows[i].cells[j].children[0].value;
+                arr[i][j] = v === "" ? 0 : parseInt(v);
+            }
+        }
+        return arr;
+    }
 
-    solve(grid);
+    async function solve() {
+        let gridData = getGrid();
+        let res = await fetch("http://localhost:8080/solve", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ grid: gridData })
+        });
+
+        let data = await res.json();
+
+        if (data.status !== "ok") {
+            alert(data.message);
+            return;
+        }
+
+        // Fill solution
+        let sol = data.solution;
+        for (let i = 0; i < 9; i++) {
+            for (let j = 0; j < 9; j++) {
+                grid.rows[i].cells[j].children[0].value = sol[i][j];
+            }
+        }
+    }
+
+    function clearGrid() {
+        for (let i = 0; i < 9; i++)
+            for (let j = 0; j < 9; j++)
+                grid.rows[i].cells[j].children[0].value = "";
+    }
+
+    // TAB Switch
+    document.getElementById("solveTabBtn").onclick = () => switchTab("solve");
+    document.getElementById("createTabBtn").onclick = () => switchTab("create");
+
+    function switchTab(tab) {
+        document.getElementById("solveTab").style.display = tab === "solve" ? "block" : "none";
+        document.getElementById("createTab").style.display = tab === "create" ? "block" : "none";
+        document.getElementById("solveTabBtn").classList.toggle("active", tab === "solve");
+        document.getElementById("createTabBtn").classList.toggle("active", tab === "create");
+    }
 </script>
+
 </body>
 </html>
