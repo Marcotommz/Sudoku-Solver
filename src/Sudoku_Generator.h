@@ -5,7 +5,7 @@
 #include <array>
 #include <iostream>
 #include <random>
-#include "Sudoku_Solver.h"
+#include "../Sudoku_Solver.h"
 using namespace std;
 
 /**
@@ -14,46 +14,12 @@ using namespace std;
  * Utilizza backtracking tramite Sudoku_Solver.
  */
 class Sudoku_Generator {
-
-public:
+    private:
 
     Sudoku_Solver solver;  // istanza del solver per validazioni e backtracking
 
     array<array<__int8 , 9 >, 9 > base_sudoku;   // matrice finale del sudoku
     array<array<int , 2> , 81> cells;            // lista di coordinate (r,c) mescolate
-
-    /**
-     * Crea un sudoku completo e rimuove celle in base alla difficoltà
-     * @param difficulty numero di celle da svuotare
-     * @return griglia Sudoku parzialmente riempita
-     */
-    array<array<__int8 , 9 >, 9 > create_sudoku(int difficulty){
-        random_device rd;
-        mt19937 gen(rd());
-        uniform_int_distribution<int> dist(1,9);
-
-        // Reset griglia
-        for (int i = 0; i < 9; i++) {
-            base_sudoku[i].fill(0);
-        }
-
-        // Inizializza lista random di celle
-        inizializeCells();
-
-        // Posiziona un numero casuale per avviare la generazione
-        int r = dist(gen);
-        int c = dist(gen);
-        __int8 n = dist(gen);
-        base_sudoku[r][c] = n;
-
-        // Genera sudoku completo con backtracking
-        populate_sudoku(base_sudoku, 0, 0);
-
-        // Rimuove celle mantenendo validità
-        add_spaces(base_sudoku , difficulty , 0);
-
-        return base_sudoku;
-    }
 
     /**
      * Genera un sudoku completo tramite backtracking ricorsivo
@@ -141,6 +107,41 @@ public:
 
         shuffle(cells.begin(), cells.end(), gen);
     }
+public:
+
+    /**
+     * Crea un sudoku completo e rimuove celle in base alla difficoltà
+     * @param difficulty numero di celle da svuotare
+     * @return griglia Sudoku parzialmente riempita
+     */
+    array<array<__int8 , 9 >, 9 > create_sudoku(int difficulty){
+        random_device rd;
+        mt19937 gen(rd());
+        uniform_int_distribution<int> dist(1,9);
+
+        // Reset griglia
+        for (int i = 0; i < 9; i++) {
+            base_sudoku[i].fill(0);
+        }
+
+        // Inizializza lista random di celle
+        inizializeCells();
+
+        // Posiziona un numero casuale per avviare la generazione
+        int r = dist(gen);
+        int c = dist(gen);
+        __int8 n = dist(gen);
+        base_sudoku[r][c] = n;
+
+        // Genera sudoku completo con backtracking
+        populate_sudoku(base_sudoku, 0, 0);
+
+        // Rimuove celle mantenendo validità
+        add_spaces(base_sudoku , difficulty , 0);
+
+        return base_sudoku;
+    }
+
 };
 
 #endif //SUDOKU_SOLVER_SUDOKU_GENERATOR_H

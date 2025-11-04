@@ -1,0 +1,31 @@
+<!doctype html>
+<html>
+<body>
+<script>
+    async function solve(grid) {
+        const res = await fetch('http://localhost:8080/solve', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({grid})
+        });
+        const j = await res.json();
+        console.log(j);
+    }
+
+    // esempio grid
+    const grid = [
+        [5,3,0,0,7,0,0,0,0],
+        [6,0,0,1,9,5,0,0,0],
+        [0,9,8,0,0,0,0,6,0],
+        [8,0,0,0,6,0,0,0,3],
+        [4,0,0,8,0,3,0,0,1],
+        [7,0,0,0,2,0,0,0,6],
+        [0,6,0,0,0,0,2,8,0],
+        [0,0,0,4,1,9,0,0,5],
+        [0,0,0,0,8,0,0,7,9]
+    ];
+
+    solve(grid);
+</script>
+</body>
+</html>
