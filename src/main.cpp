@@ -10,6 +10,7 @@
 #include "httplib.h"        // cpp-httplib (single-header)
 #include "json.hpp"         // nlohmann::json (single-header)
 #include "Sudoku_Solver.h"  // il tuo solver documentato
+#include "Sudoku_Generator.h"
 #include <array>
 #include <iostream>
 #include <fstream>
@@ -28,6 +29,7 @@ int main() {
         res.set_header("Access-Control-Allow-Headers", "Content-Type");
         res.status = 200;
     });
+
     //Endpoint Get /
     svr.Get("/", [](const httplib::Request&, httplib::Response& res) {
         cout<<"GET request"<<endl;
@@ -122,6 +124,46 @@ int main() {
 
         res.set_content(out.dump(), "application/json");
     });
+
+    // Endpoint POST /generate
+    svr.Post("/generate", [](const httplib::Request& req, httplib::Response& res) {
+        cout << "POST /generate" << endl;
+        res.set_header("Access-Control-Allow-Origin", "*");
+
+        // parse difficoltà: { "difficulty": X }
+        json j;
+        try {
+            j = json::parse(req.body);
+        } catch (...) {
+            res.status = 400;
+            res.set_content(R"({"status":"error","message":"Invalid JSON"})", "application/json");
+            return;
+        }
+
+        int diff = 40; // default medium
+        if (j.contains("difficulty") && j["difficulty"].is_number()) {
+            diff = j["difficulty"].get<int>();
+            diff = max(20, min(60, diff)); // clamp 20..60 buchi
+        }
+
+        Sudoku_Generator gen;
+        auto puzzle = gen.create_sudoku(diff);
+
+        json out;
+        out["status"] = "ok";
+        out["grid"] = json::array();
+
+        for (int i = 0; i < 9; i++) {
+            json row = json::array();
+            for (int k = 0; k < 9; k++) {
+                row.push_back((int)puzzle[i][k]);
+            }
+            out["grid"].push_back(row);
+        }
+
+        res.set_content(out.dump(), "application/json");
+    });
+
 
     cout << "Server listening on http://localhost:8080\n";
     // ascolta su tutte le interfacce (o "localhost" se preferisci)

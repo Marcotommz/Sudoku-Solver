@@ -2,7 +2,8 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>Sudoku Solver</title>
+    <title>Sudoku Solver & Generator</title>
+
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -11,9 +12,15 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            transition: 0.3s;
         }
 
-        /* NAVBAR */
+        /* Dark mode */
+        body.dark {
+            background: #1e1e1e;
+            color: white;
+        }
+
         .navbar {
             width: 100%;
             background: #222;
@@ -28,113 +35,139 @@
             text-decoration: none;
             font-size: 18px;
             padding: 6px 12px;
+            border-radius: 5px;
+            transition: 0.2s;
         }
 
-        .navbar a.active, .navbar a:hover {
+        .navbar a.active,
+        .navbar a:hover {
             background: #444;
-            border-radius: 5px;
         }
 
         .container {
-            width: 500px;
+            width: 600px;
             text-align: center;
-            margin-top: 40px;
+            margin-top: 30px;
+            animation: fadeIn 0.4s;
         }
 
-        /* GRIGLIA SUDOKU */
-        #grid {
-            border: 3px solid #000;
+        @keyframes fadeIn {
+            from {opacity: 0; transform: translateY(10px);}
+            to {opacity: 1; transform: translateY(0);}
+        }
+
+        table {
+            border: 3px solid black;
             margin: 20px auto;
             border-collapse: collapse;
         }
 
-        #grid input {
+        input {
             width: 45px;
             height: 45px;
-            text-align: center;
             font-size: 22px;
+            text-align: center;
             border: 1px solid #999;
-            outline: none;
         }
 
-        /* Bold lines 3x3 */
-        #grid tr:nth-child(3n) input {
-            border-bottom: 3px solid #000;
+        tr:nth-child(3n) input {
+            border-bottom: 3px solid black !important;
         }
 
-        #grid td:nth-child(3n) input {
-            border-right: 3px solid #000;
+        td:nth-child(3n) input {
+            border-right: 3px solid black !important;
         }
 
         button {
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-            margin: 10px;
-            border-radius: 5px;
+            padding: 10px 18px;
+            margin: 6px;
+            border-radius: 6px;
             border: none;
             background: #0077ff;
+            font-size: 15px;
             color: white;
+            cursor: pointer;
+            transition: 0.15s;
         }
 
         button:hover {
             background: #005fcc;
+            transform: scale(1.05);
         }
 
-        .tab {
-            display: none;
-        }
+        .tab { display: none; }
+
+        /* Dark mode tables/buttons */
+        body.dark table { border-color: white; }
+        body.dark input { background: #333; color: white; border-color: #777; }
+        body.dark button { background: #0080ff; }
+        body.dark .navbar { background: #000; }
     </style>
 </head>
 
 <body>
+
 <!-- NAVBAR -->
 <div class="navbar">
     <a href="#" id="solveTabBtn" class="active">Solve</a>
     <a href="#" id="createTabBtn">Create</a>
+    <a href="#" id="themeBtn">Dark Mode</a>
 </div>
 
-<!-- MAIN CONTENT -->
 <div class="container">
 
-    <!-- TAB SOLVE -->
+    <!-- SOLVE TAB -->
     <div id="solveTab" class="tab" style="display:block;">
-        <h2>Sudoku Solver</h2>
+        <h2>Solve Sudoku</h2>
         <table id="grid"></table>
         <button onclick="solve()">Solve</button>
         <button onclick="clearGrid()">Clear</button>
-        <div id="solution"></div>
     </div>
 
-    <!-- TAB CREATE -->
+    <!-- CREATE TAB -->
     <div id="createTab" class="tab">
-        <h2>Sudoku Generator</h2>
-        <p>Coming soon...</p>
-    </div>
+        <h2>Create Sudoku</h2>
 
+        <label>Difficoltà (20-60 celle vuote):</label><br>
+        <input id="difficulty" type="number" value="40" min="20" max="60"><br><br>
+
+        <button onclick="generatePuzzle()">Generate</button>
+        <button onclick="clearCreateGrid()">Clear</button>
+        <button onclick="copyToSolve()">Copy to Solve</button>
+
+        <table id="createGrid"></table>
+    </div>
 </div>
 
 <script>
-    // Build Sudoku grid
-    const grid = document.getElementById("grid");
-    for (let i = 0; i < 9; i++) {
-        let row = grid.insertRow();
-        for (let j = 0; j < 9; j++) {
-            let cell = row.insertCell();
-            let inp = document.createElement("input");
-            inp.type = "number";
-            inp.min = "0";
-            inp.max = "9";
-            cell.appendChild(inp);
+
+    const SERVER_URL = "localhost"
+    /* Build both grids */
+    function buildGrid(tableID) {
+        const table = document.getElementById(tableID);
+        for (let i = 0; i < 9; i++) {
+            let row = table.insertRow();
+            for (let j = 0; j < 9; j++) {
+                let cell = row.insertCell();
+                let inp = document.createElement("input");
+                inp.type = "number";
+                inp.min = "0";
+                inp.max = "9";
+                cell.appendChild(inp);
+            }
         }
     }
 
-    function getGrid() {
+    buildGrid("grid");
+    buildGrid("createGrid");
+
+    function getGrid(tableID) {
+        const table = document.getElementById(tableID);
         let arr = [];
         for (let i = 0; i < 9; i++) {
             arr[i] = [];
             for (let j = 0; j < 9; j++) {
-                let v = grid.rows[i].cells[j].children[0].value;
+                let v = table.rows[i].cells[j].children[0].value;
                 arr[i][j] = v === "" ? 0 : parseInt(v);
             }
         }
@@ -142,48 +175,93 @@
     }
 
     async function solve() {
-        let gridData = getGrid();
+        let gridData = getGrid("grid");
+
         try {
-            let res = await fetch("http://localhost:8080/solve", {
+            let res = await fetch(`http://${SERVER_URL}:8080/solve`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ grid: gridData })
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({grid: gridData})
             });
 
             let data = await res.json();
-
-            if (data.status !== "ok") {
-                alert(data.message);
-                return;
-            }
+            if (data.status !== "ok") return alert(data.message);
 
             let sol = data.solution;
+            const grid = document.getElementById("grid");
             for (let i = 0; i < 9; i++)
                 for (let j = 0; j < 9; j++)
                     grid.rows[i].cells[j].children[0].value = sol[i][j];
 
-        } catch (err) {
-            alert("Errore di connessione al server!");
-            console.error(err);
+        } catch (e) {
+            alert("Server non raggiungibile");
         }
     }
 
-    function clearGrid() {
-        for (let i = 0; i < 9; i++)
-            for (let j = 0; j < 9; j++)
-                grid.rows[i].cells[j].children[0].value = "";
+    async function generatePuzzle() {
+        const difficulty = document.getElementById("difficulty").value;
+
+        try {
+            let res = await fetch(`http://${SERVER_URL}:8080/generate`, {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({difficulty})
+            });
+
+            let data = await res.json();
+            if (data.status !== "ok") return alert(data.message);
+
+            const table = document.getElementById("createGrid");
+            for (let i = 0; i < 9; i++)
+                for (let j = 0; j < 9; j++)
+                    table.rows[i].cells[j].children[0].value = data.grid[i][j] === 0 ? "" : data.grid[i][j];
+
+        } catch (e) {
+            alert("Errore connessione server");
+        }
     }
 
-    // TAB SWITCH
+    /* Clear functions */
+    function clearGrid() {
+        const grid = document.getElementById("grid");
+        for (let r of grid.rows)
+            for (let c of r.cells)
+                c.children[0].value = "";
+    }
+
+    function clearCreateGrid() {
+        const grid = document.getElementById("createGrid");
+        for (let r of grid.rows)
+            for (let c of r.cells)
+                c.children[0].value = "";
+    }
+
+    /* Copy Generator → Solver */
+    function copyToSolve() {
+        const src = document.getElementById("createGrid");
+        const dst = document.getElementById("grid");
+
+        for (let i = 0; i < 9; i++)
+            for (let j = 0; j < 9; j++)
+                dst.rows[i].cells[j].children[0].value =
+                    src.rows[i].cells[j].children[0].value;
+    }
+
+    /* Tab switching */
     document.getElementById("solveTabBtn").onclick = () => switchTab("solve");
     document.getElementById("createTabBtn").onclick = () => switchTab("create");
 
-    function switchTab(tab) {
-        document.getElementById("solveTab").style.display = tab === "solve" ? "block" : "none";
-        document.getElementById("createTab").style.display = tab === "create" ? "block" : "none";
-        document.getElementById("solveTabBtn").classList.toggle("active", tab === "solve");
-        document.getElementById("createTabBtn").classList.toggle("active", tab === "create");
+    function switchTab(t) {
+        document.getElementById("solveTab").style.display = t==="solve" ? "block" : "none";
+        document.getElementById("createTab").style.display = t==="create" ? "block" : "none";
+        solveTabBtn.classList.toggle("active", t==="solve");
+        createTabBtn.classList.toggle("active", t==="create");
     }
+
+    /* Dark/Light mode */
+    document.getElementById("themeBtn").onclick = () => {
+        document.body.classList.toggle("dark");
+    };
 </script>
 
 </body>

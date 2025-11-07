@@ -5,7 +5,7 @@
 #include <array>
 #include <iostream>
 #include <random>
-#include "../Sudoku_Solver.h"
+#include "Sudoku_Solver.h"
 using namespace std;
 
 /**
